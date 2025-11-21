@@ -14,7 +14,7 @@ class   TableroLaberinto:
         self.tablero[fila][columna] = '#'
     
     def sin_paredes(self,fila,columna):
-        return self.tablero[fila][columna] in ('.','Q')
+        return self.tablero[fila][columna] != '#'
     
     def posibilidades(self,pos):
         fila, columna = pos
@@ -23,7 +23,7 @@ class   TableroLaberinto:
         
         for direcciones_fila, direcciones_columna in direcciones:
             nueva_fila, nueva_columna = fila + direcciones_fila,columna + direcciones_columna
-            if 0 <=nueva_fila < self.fila and 0 <= nueva_columna < self.columna and self.sin_paredes(nueva_fila, nueva_columna):
+            if 0 <=nueva_fila < self.fila and 0 <= nueva_columna < self.columna: #and self.sin_paredes(nueva_fila, nueva_columna):
                 movimientos.append((nueva_fila,nueva_columna))
         
         return movimientos
@@ -54,15 +54,15 @@ class   TableroLaberinto:
     
     def evaluar(self,gato_pos,raton_pos,queso_pos):
         if gato_pos == raton_pos:
-            return -1000
-        if raton_pos == queso_pos:
             return 1000
+        if raton_pos == queso_pos:
+            return -1000
         
         distancia_raton_queso = self.distancia_manhattan(raton_pos,queso_pos)
         distancia_gato_raton = self.distancia_manhattan(gato_pos,raton_pos)
         
         puntaje_queso = 500 - distancia_raton_queso*10
-        puntaje_gato = distancia_gato_raton*10 -500
+        puntaje_gato = 500 - distancia_gato_raton*10
             
         return  puntaje_queso + puntaje_gato        
         
@@ -82,21 +82,21 @@ class   TableroLaberinto:
         if es_turno_gato:
             max_eval = -float('inf')
             for cada_movimiento_gato in self.posibilidades(gato_pos):
-                eval = self.minimax(cada_movimiento_gato,raton_pos,queso_pos,profundidad-1,False)
-                max_eval = max(max_eval,eval)
+                score = self.minimax(cada_movimiento_gato,raton_pos,profundidad-1,False,queso_pos)
+                max_eval = max(max_eval,score)
             return max_eval
         else:
             min_eval = float('inf')
             for cada_movimiento_raton in self.posibilidades(raton_pos):
-                eval = self.minimax(gato_pos,cada_movimiento_raton,raton_pos,queso_pos,profundidad-1,True)
-                min_eval = min(min_eval,eval)
+                score = self.minimax(gato_pos,cada_movimiento_raton,profundidad-1,True,queso_pos)
+                min_eval = min(min_eval,score)
             return min_eval
-            
+        
         
 mi_tablero = TableroLaberinto(16,16)
 mi_tablero.inicio_gato(0,0)
 mi_tablero.inicio_raton(15,15)
-mi_tablero.queso_pos(8,5,)
+mi_tablero.queso_pos(3,5,)
 
 
 mi_tablero.agregar_paredes(4,4)
@@ -109,6 +109,27 @@ mi_tablero.agregar_paredes(11,3)
 mi_tablero.agregar_paredes(14,7)
 mi_tablero.agregar_paredes(13,2)
 mi_tablero.agregar_paredes(10,8)
+mi_tablero.agregar_paredes(0,1)
+mi_tablero.agregar_paredes(1,3)
+mi_tablero.agregar_paredes(2,10)
+mi_tablero.agregar_paredes(3,7)
+mi_tablero.agregar_paredes(4,12)
+mi_tablero.agregar_paredes(5,9)
+mi_tablero.agregar_paredes(6,14)
+mi_tablero.agregar_paredes(7,5)
+mi_tablero.agregar_paredes(8,11)
+mi_tablero.agregar_paredes(9,6)
+mi_tablero.agregar_paredes(10,13)
+mi_tablero.agregar_paredes(11,9)
+mi_tablero.agregar_paredes(12,4)
+mi_tablero.agregar_paredes(13,10)
+mi_tablero.agregar_paredes(14,3)
+mi_tablero.agregar_paredes(15,2)
+mi_tablero.agregar_paredes(8,2)
+mi_tablero.agregar_paredes(12,12)
+mi_tablero.agregar_paredes(7,14)
+mi_tablero.agregar_paredes(1,11)
+
 
 print(mi_tablero)
 
@@ -116,7 +137,7 @@ raton_fila = 15
 raton_columna = 15
 gato_fila = 0
 gato_columna = 0
-queso_pos = (8,5)
+queso_pos = (3,5)
 historial_movimientos = []
 turno_gato = False
 contador=0
@@ -128,40 +149,30 @@ while True:
     
     mi_tablero.tablero[gato_fila][gato_columna] = '.'
     
-    mejor_movimiento = None
-    mejor_valor = -float('inf')
-    for mov in mi_tablero.posibilidades((gato_fila,gato_columna)):
-        val = mi_tablero.minimax(mov,(raton_fila,raton_columna),queso_pos,profundidad = 3,es_turno_gato = False)
-        if val > mejor_valor:
-            mejor_valor = val
-            mejor_movimiento =mov
+        
+    if turno_gato:  
+        
+        mejor_movimiento = None
+        mejor_valor = -float('inf')
+        for mov in mi_tablero.posibilidades((gato_fila,gato_columna)):
+            val = mi_tablero.minimax(mov,(raton_fila,raton_columna), 2,False,queso_pos)
+            if val > mejor_valor:
+                mejor_valor = val
+                mejor_movimiento =mov
+        if mejor_movimiento is not None:
+            gato_fila,gato_columna = mejor_movimiento
     
-    gato_fila,gato_columna = mejor_movimiento
-    
-    
-    if not turno_gato:  
-         
+    else:
         if raton_fila > queso_pos [0] and mi_tablero.sin_paredes(raton_fila -1,raton_columna):
             raton_fila -= 1
         elif raton_fila < queso_pos [0] and mi_tablero.sin_paredes(raton_fila +1,raton_columna):
             raton_fila += 1
         
-        if raton_columna > queso_pos [1] and mi_tablero.sin_paredes(raton_fila,raton_columna -1):
+        elif raton_columna > queso_pos [1] and mi_tablero.sin_paredes(raton_fila,raton_columna -1):
             raton_columna -= 1
         elif raton_columna < queso_pos [1] and mi_tablero.sin_paredes(raton_fila,raton_columna +1):
             raton_columna += 1
             
-    else:   
-        
-        if gato_fila > raton_fila and mi_tablero.sin_paredes(gato_fila -1,gato_columna):
-            gato_fila -= 1
-        elif gato_fila < raton_fila and mi_tablero.sin_paredes(gato_fila +1,gato_columna):
-            gato_fila += 1
-    
-        if gato_columna > raton_columna and mi_tablero.sin_paredes(gato_fila,gato_columna -1):
-            gato_columna -= 1
-        elif gato_columna < raton_columna and mi_tablero.sin_paredes(gato_fila,gato_columna +1):
-            gato_columna += 1
     
     turno_gato = not turno_gato
     
@@ -187,5 +198,5 @@ while True:
         print('perdiste el juego')
         break
     
-    time.sleep(1.5)
+    time.sleep(2.5)
 
